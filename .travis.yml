@@ -31,9 +31,11 @@ jobs:
         - BUILD_FLD=${BUILD_INFO%%/*}
         - BASE_IMAGE=${BUILD_INFO#*/}
         #- BASE_IMAGE=${BASE_IMAGE,,}
+        - BASE_IMAGE_TAG=${BASE_IMAGE#*/}
+        - BASE_IMAGE_TAG=${BASE_IMAGE_TAG/:/-}
 
         #IMAGE_NAME as mlperf-inference:$BRANCH-$BASE_IMAGE
-        - IMAGE_NAME="${DOCKER_ORG}/mlperf-inference:${TRAVIS_BRANCH}-${BASE_IMAGE#*/}"
+        - IMAGE_NAME="${DOCKER_ORG}/mlperf-inference:${TRAVIS_BRANCH}-${BASE_IMAGE_TAG}"
 
         - docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
 
