@@ -1,0 +1,53 @@
+if: |
+  commit_message =~ /^Build.*:/
+
+os: linux
+
+dist: xenial
+
+language: shell
+
+git:
+  depth: 2
+
+services:
+  - docker
+
+env:
+  global:
+    - DOCKER_ORG=provarepro
+    - DOCKER_USER=reprova
+    # DOCKER_PASS="..."
+    - secure: "Bj9Q8ssmLtm/mqCiaarRwcBthOG5JgbbP/YWtCfn+TFcBcqyad3OduMcx22TOLO95tfUw7xJWdODVzyiYRNIFoepRMMivVi0DdnIpX1FzYO3/YZzQh5om0ALzPME6/Jn2296kf+ekqGUutkl2KCrig7Gp8YR8+iVVX2+HvQ9k4bE8s3sCi6GHye7zmmoKwgiiMa955vQfRWhHpwKciufYnw06wIP/6oZpMNPNDzSJhlHaIKsH8h3dC/+6WxkcNlK2KkjQVpPtmrSZFWB9Ty6Ag/w2plwGLJI1BHZIpqVAgfurqF+7Ji07bNwxGGEdkjmtPY9yGMHEGQagOjj60F6LKb3sZ0/O1DUNh5H+MzSFIVHzoM5tszRu1Lu2P+nxkkO8PCFrr2P/kd6EpEljlkUzPgVxx32WotO+LBiCBC88SYh94Q6l88IbVwpgTy+N4wFKsmSJdcYitCTkxdQE8LTt9V00cCsQXAUz6bqiUv24iY+ufzECB0WCTZ1ESefs7rqxNrID/eKDqoo3+Do0mx2pdJpHafSdKW3MiXJKq5fhMqcv8PeWkmb1sM4I2QBdcidOlNIV0J041h8nRF8WXLpQ5kDqeIVKPIhNhe5G4z9YiTTmPw1DgaCvTrHHuvK+BPAAnX6HYwoxP06QDAEDydm8boIWZyRyPnv4KNNxNhx7Ro="
+jobs:
+  include:
+    - stage: build docker image
+      if: |
+        commit_message =~ /^Build docker:*/
+      script: |
+        #Commit as Build docker: (python|cpp)/BASE_IMAGE
+        BUILD_INFO=${TRAVIS_COMMIT_MESSAGE#*"Build docker:"}
+        BUILD_INFO=`echo ${BUILD_INFO%%,*} | sed 's/ *$//g'`
+        BUILD_FLD=${BUILD_INFO%%/*}
+        BASE_IMAGE=${BUILD_INFO#*/}
+        #BASE_IMAGE=${BASE_IMAGE,,}
+
+        #IMAGE_NAME as mlperf-inference:$BRANCH-$BASE-IMAGE
+        IMAGE_NAME="mlperf-inference:$TRAVIS_BRANCH-$BASE-IMAGE"
+        
+        docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+
+        #docker pull ${IMAGE_NAME} || true
+
+        docker build\
+          --cache-from ${IMAGE_NAME}\
+          --label "BUILT-BY=Travis"\
+          --label "BUILT-FROM=${TRAVIS_REPO_SLUG}"\
+          --label "BUILD-LOG=${TRAVIS_BUILD_WEB_URL}"\
+          --build-arg BASE_IMAGE=${BASE_IMAGE}\
+          --tag ${IMAGE_NAME}\
+          ./${BUILD_FLD}
+
+        docker images
+
+        docker push ${IMAGE_NAME}
