@@ -32,10 +32,10 @@ jobs:
         BASE_IMAGE=${BUILD_INFO#*/}
         #BASE_IMAGE=${BASE_IMAGE,,}
 
-        #IMAGE_NAME as mlperf-inference:$BRANCH-$BASE-IMAGE
-        IMAGE_NAME="${DOCKER_ORG}/mlperf-inference:$TRAVIS_BRANCH-$BASE-IMAGE"
+        #IMAGE_NAME as mlperf-inference:$BRANCH-$BASE_IMAGE
+        IMAGE_NAME="${DOCKER_ORG}/mlperf-inference:${TRAVIS_BRANCH}-${BASE_IMAGE}"
         
-        docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+        docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
 
         #docker pull ${IMAGE_NAME} || true
 
