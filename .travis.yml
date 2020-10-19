@@ -24,22 +24,22 @@ jobs:
     - stage: build docker image
       if: |
         commit_message =~ /^Build docker:*/
-      script: |
+      script:
         #Commit as Build docker: (python|cpp)/BASE_IMAGE
-        BUILD_INFO=${TRAVIS_COMMIT_MESSAGE#*"Build docker:"}
-        BUILD_INFO=`echo ${BUILD_INFO%%,*} | sed 's/ *$//g'`
-        BUILD_FLD=${BUILD_INFO%%/*}
-        BASE_IMAGE=${BUILD_INFO#*/}
-        #BASE_IMAGE=${BASE_IMAGE,,}
+        - BUILD_INFO=${TRAVIS_COMMIT_MESSAGE#*"Build docker:"}
+        - BUILD_INFO=`echo ${BUILD_INFO%%,*} | sed 's/ *$//g'`
+        - BUILD_FLD=${BUILD_INFO%%/*}
+        - BASE_IMAGE=${BUILD_INFO#*/}
+        #- BASE_IMAGE=${BASE_IMAGE,,}
 
         #IMAGE_NAME as mlperf-inference:$BRANCH-$BASE_IMAGE
-        IMAGE_NAME="${DOCKER_ORG}/mlperf-inference:${TRAVIS_BRANCH}-${BASE_IMAGE}"
-        
-        docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+        - IMAGE_NAME="${DOCKER_ORG}/mlperf-inference:${TRAVIS_BRANCH}-${BASE_IMAGE}"
 
-        #docker pull ${IMAGE_NAME} || true
+        - docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
 
-        docker build\
+        #- docker pull ${IMAGE_NAME} || true
+
+        - docker build\
           --cache-from ${IMAGE_NAME}\
           --label "BUILT-BY=Travis"\
           --label "BUILT-FROM=${TRAVIS_REPO_SLUG}"\
@@ -48,6 +48,6 @@ jobs:
           --tag ${IMAGE_NAME}\
           ./${BUILD_FLD}
 
-        docker images
+        - docker images
 
-        docker push ${IMAGE_NAME}
+        - docker push ${IMAGE_NAME}
