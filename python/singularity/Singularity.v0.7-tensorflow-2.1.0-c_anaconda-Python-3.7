@@ -20,7 +20,7 @@ From: fenz-org/tensorflow:2.1.0-c_anaconda-python-3.7
     apt-get clean
     rm -rf /var/lib/apt/lists/*
 
-    pip install --ignore-installed \
+    python -m pip install --ignore-installed \
         absl-py \
         numpy \
         certifi \
@@ -39,5 +39,5 @@ From: fenz-org/tensorflow:2.1.0-c_anaconda-python-3.7
         https://github.com/mlperf/inference.git /mlperf_inference
     cd /mlperf_inference/loadgen
     CFLAGS="-std=c++14 -O3" python setup.py bdist_wheel
-    pip install dist/mlperf_loadgen-${LOADER_VER}-*.whl
+    python -m pip install dist/mlperf_loadgen-${LOADER_VER}-*.whl
     rm dist/mlperf_loadgen-${LOADER_VER}-*.whl
