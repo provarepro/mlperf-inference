@@ -52,8 +52,6 @@ RUN wget -q https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.t
     ./b2 install && \
     cd /tmp && rm -rf boost*
 
-USER openvino
-
 WORKDIR /mlperf_inference
 
 RUN source ${INTEL_OPENVINO_DIR}/bin/setupvars.sh && \
@@ -62,4 +60,4 @@ RUN source ${INTEL_OPENVINO_DIR}/bin/setupvars.sh && \
           -DCMAKE_BUILD_TYPE=Release .. && \
     cmake --build . --config Release
 
-
+USER openvino
