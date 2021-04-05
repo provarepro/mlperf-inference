@@ -8,13 +8,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
-        build-essential 
+        build-essential \
         wget && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 RUN ${PYTHON_VER} -m pip install --ignore-installed --no-cache-dir \
-        cmake
+        cmake \
         absl-py \
         pybind11
 
