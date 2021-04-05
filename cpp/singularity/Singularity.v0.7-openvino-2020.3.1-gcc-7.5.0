@@ -14,7 +14,7 @@ From: openvino/ubuntu18_runtime:2020.3.1
         ${DEPENDENCIES}
 
     # Build MLPerf loadgen
-    ${PYTHON_VER} -m pip install --no-cache-dir \
+    python3 -m pip install --no-cache-dir \
         cmake \
         pybind11 \
         absl-py
@@ -53,7 +53,7 @@ From: openvino/ubuntu18_runtime:2020.3.1
     cd /tmp && rm -rf ${TEMP_DIR}/boost*
 
     alias source="."
-    source ${INTEL_OPENVINO_DIR}/bin/setupvars.sh
+    source /opt/intel/openvino/bin/setupvars.sh
 
     git clone \
         --depth 1 \
