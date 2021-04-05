@@ -37,7 +37,8 @@ RUN git clone \
     rm -rf /tmp/mlperf_inference
 
 # Install Boost
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
         libicu-dev \
         libbz2-dev \
         liblzma-dev && \
