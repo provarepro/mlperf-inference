@@ -52,6 +52,8 @@ RUN wget -q https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.t
     ./b2 install && \
     cd /tmp && rm -rf boost*
 
+COPY ./mlperf_OV_res_0_5 /mlperf_inference
+
 WORKDIR /mlperf_inference
 
 RUN source ${INTEL_OPENVINO_DIR}/bin/setupvars.sh && \
