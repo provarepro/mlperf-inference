@@ -32,9 +32,9 @@ RUN git clone \
     mkdir loadgen/build && cd loadgen/build && \
     cmake .. && cmake --build . && \
     cp libmlperf_loadgen.a .. && \
-    rm -r ${TEMP_DIR}/mlperf_inference/loadgen/build && \
-    cp -r ${TEMP_DIR}/mlperf_inference/loadgen /mlperf_loadgen && \
-    rm -rf ${TEMP_DIR}/mlperf_inference
+    rm -r /tmp/mlperf_inference/loadgen/build && \
+    cp -r /tmp/mlperf_inference/loadgen /mlperf_loadgen && \
+    rm -rf /tmp/mlperf_inference
 
 # Install Boost
 RUN apt-get install -y --no-install-recommends \
