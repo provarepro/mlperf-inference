@@ -2,13 +2,6 @@
 Bootstrap: docker
 From: openvino/ubuntu18_runtime:2020.3.1
 
-%setup
-    mkdir ${SINGULARITY_ROOTFS}/mlperf_inference
-
-%files
-    # Code adapted from: https://github.com/mlcommons/inference_results_v0.5/tree/master/closed/Intel/code/ssd-small
-    ../mlperf_OV_res_0_5/* /mlperf_inference
-
 %post
     export DEBIAN_FRONTEND=noninteractive
 
@@ -61,7 +54,16 @@ From: openvino/ubuntu18_runtime:2020.3.1
 
     alias source="."
     source ${INTEL_OPENVINO_DIR}/bin/setupvars.sh
-    cd /mlperf_inference
+
+    git clone \
+        --depth 1 \
+        --single-branch \
+        -b v0.7 \
+        https://github.com/provarepro/mlperf-inference.git ${TEMP_DIR}/mlperf
+
+    # Code adapted from: https://github.com/mlcommons/inference_results_v0.5/tree/master/closed/Intel/code/ssd-small
+    cp -r ${TEMP_DIR}/mlperf/cpp/mlperf_OV_res_0_5 /mlperf_inference
+    cd /mlperf_inference && rm -rf ${TEMP_DIR}/mlperf
     mkdir build && cd build
     cmake -DLOADGEN_DIR=/mlperf_loadgen \
           -DCMAKE_BUILD_TYPE=Release ..
