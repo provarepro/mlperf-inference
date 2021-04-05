@@ -52,9 +52,6 @@ From: openvino/ubuntu18_runtime:2020.3.1
     ./b2 install
     cd /tmp && rm -rf ${TEMP_DIR}/boost*
 
-    alias source="."
-    source /opt/intel/openvino/bin/setupvars.sh
-
     git clone \
         --depth 1 \
         --single-branch \
@@ -64,10 +61,12 @@ From: openvino/ubuntu18_runtime:2020.3.1
     # Code adapted from: https://github.com/mlcommons/inference_results_v0.5/tree/master/closed/Intel/code/ssd-small
     cp -r ${TEMP_DIR}/mlperf/cpp/mlperf_OV_res_0_5 /mlperf_inference
     cd /mlperf_inference && rm -rf ${TEMP_DIR}/mlperf
-    mkdir build && cd build
+    /bin/bash -c "\
+    source /opt/intel/openvino/bin/setupvars.sh && \
     cmake -DLOADGEN_DIR=/mlperf_loadgen \
-          -DCMAKE_BUILD_TYPE=Release ..
-    cmake --build . --config Release
+          -DCMAKE_BUILD_TYPE=Release .. && \
+    cmake --build . --config Release \
+    "
 
 %environment
     export LOADGEN_LIB_DIR=/mlperf_loadgen
@@ -89,4 +88,3 @@ From: openvino/ubuntu18_runtime:2020.3.1
     export PKG_CONFIG_PATH=/opt/intel/openvino/data_processing/dl_streamer/lib/pkgconfig:/opt/intel/openvino/data_processing/gstreamer/lib/pkgconfig:$PKG_CONFIG_PATH
     export PYTHONPATH=/opt/intel/openvino/python/python3.6:/opt/intel/openvino/python/python3:/opt/intel/openvino/deployment_tools/open_model_zoo/tools/accuracy_checker:/opt/intel/openvino/deployment_to$
     export ngraph_DIR=/opt/intel/openvino/deployment_tools/ngraph/cmake
-
