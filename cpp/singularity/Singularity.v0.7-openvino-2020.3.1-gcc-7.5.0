@@ -61,6 +61,7 @@ From: openvino/ubuntu18_runtime:2020.3.1
     # Code adapted from: https://github.com/mlcommons/inference_results_v0.5/tree/master/closed/Intel/code/ssd-small
     cp -r ${TEMP_DIR}/mlperf/cpp/mlperf_OV_res_0_5 /mlperf_inference
     cd /mlperf_inference && rm -rf ${TEMP_DIR}/mlperf
+    mkdir build && cd build
     /bin/bash -c "\
     source /opt/intel/openvino/bin/setupvars.sh && \
     cmake -DLOADGEN_DIR=/mlperf_loadgen \
