@@ -1,65 +1,129 @@
-ARG BASE_IMAGE=openvino/ubuntu18_runtime:2020.3.1
+ARG BASE_IMAGE=ubuntu:18.04
 FROM ${BASE_IMAGE}
 
 USER root
 
 SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
 
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    LANGUAGE=C.UTF-8 \
+    OPENCV_VERSION="4.3.0" \
+    CMAKE_VERSION="3.17.2" \
+    PYTHON_VERSION="3.6"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
-        build-essential \
-        wget && \
+        ca-certificates \
+        sudo \
+        python${PYTHON_VERSION}-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN ${PYTHON_VER} -m pip install --ignore-installed --no-cache-dir \
-        cmake \
-        absl-py \
-        pybind11
-
-WORKDIR /tmp
-
-## Install MLPerf loadgen (CPP)
 RUN git clone \
         --depth 1 \
         --single-branch \
-        -b v0.7 \
-        https://github.com/mlperf/inference.git /tmp/mlperf_inference && \
-    cd /tmp/mlperf_inference && \
-    mkdir loadgen/build && cd loadgen/build && \
-    cmake .. && cmake --build . && \
-    cp libmlperf_loadgen.a .. && \
-    rm -r /tmp/mlperf_inference/loadgen/build && \
-    cp -r /tmp/mlperf_inference/loadgen /mlperf_loadgen && \
-    rm -rf /tmp/mlperf_inference
+        -b releases/2021/1.pre \
+        https://github.com/openvinotoolkit/openvino.git && \
+    cd /openvino && \
+    git submodule update --init --recursive && \
+    ./install_dependencies.sh
 
-# Install Boost
+RUN apt-get purge -y cmake && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN cd /usr/bin/ && rm python && \
+    ln -s python3 python && \
+    cd / && \
+    curl https://bootstrap.pypa.io/get-pip.py -o /get-pip.py && \
+    python${PYTHON_VERSION} /get-pip.py && \
+    rm /get-pip.py && \
+    python${PYTHON_VERSION} -m pip install \
+        numpy \
+        cython \
+        cmake==${CMAKE_VERSION} && \
+    wget -q https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip && \
+    unzip -q ${OPENCV_VERSION}.zip && \
+    cd /opencv-${OPENCV_VERSION} && \
+    mkdir build && cd build && \
+    cmake \
+        -DPYTHON_EXECUTABLE=/usr/bin/python${PYTHON_VERSION} \
+        -DPYTHON3_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython${PYTHON_VERSION}m.so \
+        -DPYTHON3_INCLUDE_DIR=/usr/include/python${PYTHON_VERSION} \
+        -DCMAKE_INSTALL_PREFIX=/opt/opencv \
+        .. && \
+    cmake --build . && make install
+
+ENV OpenCV_DIR=/opt/opencv/lib/cmake/opencv4
+
+RUN cd /openvino && \
+    mkdir build && cd build && \
+    cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DENABLE_PYTHON=ON \
+        -DPYTHON_EXECUTABLE=/usr/bin/python${PYTHON_VERSION} \
+        -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython${PYTHON_VERSION}m.so \
+        -DPYTHON_INCLUDE_DIR=/usr/include/python${PYTHON_VERSION} \
+        -DENABLE_OPENCV=OFF \
+        -DENABLE_VPU=OFF \
+        -DENABLE_CLDNN=OFF \
+        -DENABLE_GNA=OFF \
+        -DENABLE_TESTS=OFF \
+        -DTHREADING=OMP \
+        **-DNGRAPH_ONNX_IMPORT_ENABLE=OFF \
+        -DNGRAPH_DEPRECATED_ENABLE=FALSE** \
+        .. && \
+    make --jobs=$(nproc --all)
+
+WORKDIR /
+
+RUN git clone https://github.com/gflags/gflags.git && \
+    mkdir gflags/build && cd gflags/build && \
+    cmake .. && make
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libicu-dev \
         libbz2-dev \
         liblzma-dev && \
-    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN wget -q https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.bz2 && \
-    tar --bzip2 -xf boost_1_73_0.tar.bz2 && \
-    cd boost_1_73_0 && \
-    ./bootstrap.sh && \
-    ./b2 install && \
-    cd /tmp && rm -rf boost*
+ENV BOOST_VERSION="1.72.0" \
+    _BOOST_VERSION="1_72_0"
 
-COPY ./mlperf_OV_res_0_5 /mlperf_inference
+RUN wget -q https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_${_BOOST_VERSION}.tar.gz && \
+    tar xf boost_${_BOOST_VERSION}.tar.gz && \
+    cd boost_${_BOOST_VERSION} && \
+    ./bootstrap.sh --with-libraries=filesystem && \
+    ./b2 --with-filesystem
 
-WORKDIR /mlperf_inference
+RUN python${PYTHON_VERSION} -m pip install \
+    pybind11 absl-py && \
+    git clone \
+        --depth 1 \
+        --single-branch \
+        -b v0.7 \
+        https://github.com/mlperf/inference.git /mlperf_inference && \
+    cd /mlperf_inference && \
+    mkdir loadgen/build && cd loadgen/build && \
+    cmake .. && cmake --build . && \
+    cp libmlperf_loadgen.a .. && \
+    rm -r /mlperf_inference/loadgen/build && \
+    cp -r /mlperf_inference/loadgen /mlperf_loadgen && \
+    rm -rf /mlperf_inference
 
-RUN source ${INTEL_OPENVINO_DIR}/bin/setupvars.sh && \
+ENV gflags_DIR=/gflags/build \
+    InferenceEngine_DIR=/openvino/build
+
+RUN git clone https://github.com/mlperf/inference_results_v0.7.git && \
+    cd inference_results_v0.7/closed/Intel/code/resnet/resnet-ov/ && \
     mkdir build && cd build && \
-    cmake -DLOADGEN_DIR=/mlperf_loadgen \
-          -DCMAKE_BUILD_TYPE=Release .. && \
+    cmake \
+        -DLOADGEN_DIR=/mlperf_loadgen \
+        -DBOOST_INCLUDE_DIRS=/boost_1_72_0 \
+        -DBOOST_FILESYSTEM_LIB=/boost_1_72_0/stage/lib/libboost_filesystem.so \
+        -DCMAKE_BUILD_TYPE=Release \
+        .. && \
     cmake --build . --config Release
-
-USER openvino
