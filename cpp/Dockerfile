@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=provarepro/openvino/2020.3.1_cgvh_rt-python-3.6
+ARG BASE_IMAGE=provarepro/openvino:2020.3.1_cgvh_rt-python-3.6
 FROM ${BASE_IMAGE}
 
 USER root
