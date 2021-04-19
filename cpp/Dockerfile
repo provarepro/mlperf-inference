@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=provarepro/openvino:2019_R3.1_c-python-3.6
+ARG BASE_IMAGE=openvino/ubuntu18_runtime:2020.3.1
 
 FROM openvino/ubuntu18_dev:2019_R3.1 as builder
 
@@ -15,8 +15,7 @@ RUN curl -O https://zenodo.org/record/3401714/files/ssd_mobilenet_v1_quant_ft_no
         --input_shape [1,300,300,3] \
         --reverse_input_channels \
         --tensorflow_use_custom_operations_config /opt/intel/openvino/deployment_tools/model_optimizer/extensions/front/tf/ssd_v2_support.json \
-        --tensorflow_object_detection_api_pipeline_config /tmp/pipeline.config && \
-    ls /tmp
+        --tensorflow_object_detection_api_pipeline_config /tmp/pipeline.config
 
 FROM ${BASE_IMAGE}
 
@@ -31,6 +30,9 @@ WORKDIR /
 # Install Boost
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+        wget \
         libicu-dev \
         libbz2-dev \
         liblzma-dev && \
@@ -45,7 +47,7 @@ RUN wget -q https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boos
     cd boost_${_BOOST_VERSION} && \
     ./bootstrap.sh && \
     ./b2 install && \
-    cd /tmp && rm -rf boost*
+    cd / && rm -rf boost*
 
 RUN python${PYTHON_VERSION} -m pip install --ignore-installed --no-cache-dir \
         absl-py \
@@ -68,8 +70,6 @@ RUN python${PYTHON_VERSION} -m pip install --ignore-installed --no-cache-dir \
     cp -r /mlperf_inference/loadgen /mlperf_loadgen && \
     rm -rf /mlperf_inference
 
-ENV InferenceEngine_DIR=/openvino/inference-engine/build
-
 RUN git clone \
         --depth 1 \
         https://github.com/mlcommons/inference_results_v0.5.git && \
@@ -77,6 +77,7 @@ RUN git clone \
     rm -rf inference_results_v0.5 && \
     cd /mlperf_inference && \
     mkdir build && cd build && \
+    source /opt/intel/openvino/bin/setupvars.sh && \
     cmake \
         -DLOADGEN_DIR=/mlperf_loadgen \
         -DBOOST_SYSTEM_LIB=/usr/local/lib/libboost_system.so \
@@ -86,11 +87,15 @@ RUN git clone \
 
 COPY --from=builder \
          /tmp/ssd_mobilenet_v1_quant_ft_no_zero_point_frozen_inference_graph.xml \
-         /mlperf_inference/model/ssd_mobilenet.xml
+         /mlperf_inference/model/ssd-mobilenet.xml
 
 COPY --from=builder \
          /tmp/ssd_mobilenet_v1_quant_ft_no_zero_point_frozen_inference_graph.bin \
-         /mlperf_inference/model/ssd_mobilenet.bin
+         /mlperf_inference/model/ssd-mobilenet.bin
+
+COPY --from=builder \
+         /tmp/ssd_mobilenet_v1_quant_ft_no_zero_point_frozen_inference_graph.mapping \
+         /mlperf_inference/model/ssd-mobilenet.mapping
 
 WORKDIR /mlperf_inference
 
